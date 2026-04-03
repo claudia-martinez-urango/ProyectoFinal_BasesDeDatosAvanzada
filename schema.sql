@@ -2,9 +2,9 @@ DROP DATABASE IF EXISTS ride_hailing;
 CREATE DATABASE ride_hailing;
 USE ride_hailing;
 
--- =========================================
+-- ******************************************
 -- TABLA: COMPANY
--- =========================================
+-- ******************************************
 CREATE TABLE company (
     id_company BIGINT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,
@@ -14,9 +14,9 @@ CREATE TABLE company (
     activa BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: USUARIO
--- =========================================
+-- ******************************************
 CREATE TABLE usuario (
     id_usuario BIGINT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(80) NOT NULL,
@@ -27,10 +27,10 @@ CREATE TABLE usuario (
     activo BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: DRIVER
 -- Especialización de usuario
--- =========================================
+-- ******************************************
 CREATE TABLE driver (
     id_usuario BIGINT PRIMARY KEY,
     id_company BIGINT NOT NULL,
@@ -47,10 +47,10 @@ CREATE TABLE driver (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: RIDER
 -- Especialización de usuario
--- =========================================
+-- ******************************************
 CREATE TABLE rider (
     id_usuario BIGINT PRIMARY KEY,
     CONSTRAINT fk_rider_usuario
@@ -59,9 +59,9 @@ CREATE TABLE rider (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: VEHICULO
--- =========================================
+-- ******************************************
 CREATE TABLE vehiculo (
     id_vehiculo BIGINT PRIMARY KEY AUTO_INCREMENT,
     matricula VARCHAR(20) NOT NULL UNIQUE,
@@ -75,10 +75,10 @@ CREATE TABLE vehiculo (
     CONSTRAINT chk_vehiculo_anio CHECK (anio IS NULL OR anio >= 1900)
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: DRIVER_VEHICULO
 -- Histórico de asignación conductor-vehículo
--- =========================================
+-- ******************************************
 CREATE TABLE driver_vehiculo (
     id_usuario_driver BIGINT NOT NULL,
     id_vehiculo BIGINT NOT NULL,
@@ -97,9 +97,9 @@ CREATE TABLE driver_vehiculo (
         CHECK (fecha_hasta IS NULL OR fecha_hasta >= fecha_desde)
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: VIAJE
--- =========================================
+-- ******************************************
 CREATE TABLE viaje (
     id_viaje BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_rider BIGINT NOT NULL,
@@ -140,10 +140,10 @@ CREATE TABLE viaje (
     )
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: OFERTA
 -- Un viaje puede generar varias ofertas a conductores
--- =========================================
+-- ******************************************
 CREATE TABLE oferta (
     id_oferta BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_viaje BIGINT NOT NULL,
@@ -166,10 +166,10 @@ CREATE TABLE oferta (
     )
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- TABLA: AJUSTE_TARIFA
 -- Guarda modificaciones sobre la tarifa del viaje
--- =========================================
+-- ******************************************
 CREATE TABLE ajuste_tarifa (
     id_ajuste BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_viaje BIGINT NOT NULL,
@@ -184,10 +184,10 @@ CREATE TABLE ajuste_tarifa (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- =========================================
+-- ******************************************
 -- AUDITORIA_EVENTO
 -- Auditoría genérica del sistema
--- =========================================
+-- ******************************************
 CREATE TABLE auditoria_evento (
     id_auditoria BIGINT PRIMARY KEY AUTO_INCREMENT,
     tabla_afectada VARCHAR(50) NOT NULL,
