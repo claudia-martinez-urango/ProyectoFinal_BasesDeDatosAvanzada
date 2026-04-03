@@ -7,17 +7,18 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: ride_hailing_db
+      MYSQL_DATABASE: ride_hailing
     ports:
-      - "3306:3306" 
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
-      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+      - ./schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ./seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_password"]
       interval: 10s
       timeout: 5s
       retries: 10
+
 volumes:
   mysql_data:
