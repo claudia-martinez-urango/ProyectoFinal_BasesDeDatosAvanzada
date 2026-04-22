@@ -2,9 +2,7 @@ DROP DATABASE IF EXISTS ride_hailing;
 CREATE DATABASE ride_hailing;
 USE ride_hailing;
 
--- ******************************************
--- TABLA: COMPANY
--- ******************************************
+-- COMPANY
 CREATE TABLE company (
     id_company BIGINT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,
@@ -14,9 +12,7 @@ CREATE TABLE company (
     activa BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: USUARIO
--- ******************************************
+-- USUARIO
 CREATE TABLE usuario (
     id_usuario BIGINT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(80) NOT NULL,
@@ -27,10 +23,7 @@ CREATE TABLE usuario (
     activo BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: DRIVER
--- Especialización de usuario
--- ******************************************
+-- DRIVER
 CREATE TABLE driver (
     id_usuario BIGINT PRIMARY KEY,
     id_company BIGINT NOT NULL,
@@ -47,10 +40,7 @@ CREATE TABLE driver (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: RIDER
--- Especialización de usuario
--- ******************************************
+-- RIDER
 CREATE TABLE rider (
     id_usuario BIGINT PRIMARY KEY,
     CONSTRAINT fk_rider_usuario
@@ -59,9 +49,25 @@ CREATE TABLE rider (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: VEHICULO
--- ******************************************
+-- METODO_PAGO
+CREATE TABLE metodo_pago (
+    id_metodo_pago BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id_usuario BIGINT NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
+    detalle VARCHAR(100),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT fk_metodo_pago_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT chk_metodo_pago_tipo CHECK (
+        tipo IN ('TARJETA', 'PAYPAL', 'EFECTIVO', 'BIZUM')
+    )
+) ENGINE=InnoDB;
+
+-- VEHICULO
 CREATE TABLE vehiculo (
     id_vehiculo BIGINT PRIMARY KEY AUTO_INCREMENT,
     matricula VARCHAR(20) NOT NULL UNIQUE,
@@ -75,10 +81,7 @@ CREATE TABLE vehiculo (
     CONSTRAINT chk_vehiculo_anio CHECK (anio IS NULL OR anio >= 1900)
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: DRIVER_VEHICULO
--- Histórico de asignación conductor-vehículo
--- ******************************************
+-- DRIVER_VEHICULO
 CREATE TABLE driver_vehiculo (
     id_usuario_driver BIGINT NOT NULL,
     id_vehiculo BIGINT NOT NULL,
@@ -97,13 +100,12 @@ CREATE TABLE driver_vehiculo (
         CHECK (fecha_hasta IS NULL OR fecha_hasta >= fecha_desde)
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: VIAJE
--- ******************************************
+-- VIAJE
 CREATE TABLE viaje (
     id_viaje BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_rider BIGINT NOT NULL,
     id_driver_asignado BIGINT DEFAULT NULL,
+    id_metodo_pago BIGINT NOT NULL,
     estado VARCHAR(30) NOT NULL,
     fecha_solicitud DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_aceptacion DATETIME DEFAULT NULL,
@@ -131,6 +133,10 @@ CREATE TABLE viaje (
         FOREIGN KEY (id_driver_asignado) REFERENCES driver(id_usuario)
         ON DELETE SET NULL
         ON UPDATE CASCADE,
+    CONSTRAINT fk_viaje_metodo_pago
+        FOREIGN KEY (id_metodo_pago) REFERENCES metodo_pago(id_metodo_pago)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
 
     CONSTRAINT chk_viaje_importes CHECK (importe_estimado >= 0 AND importe_final >= 0),
     CONSTRAINT chk_viaje_distancia CHECK (distancia_km IS NULL OR distancia_km >= 0),
@@ -140,10 +146,7 @@ CREATE TABLE viaje (
     )
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: OFERTA
--- Un viaje puede generar varias ofertas a conductores
--- ******************************************
+-- OFERTA
 CREATE TABLE oferta (
     id_oferta BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_viaje BIGINT NOT NULL,
@@ -166,14 +169,19 @@ CREATE TABLE oferta (
     )
 ) ENGINE=InnoDB;
 
--- ******************************************
--- TABLA: AJUSTE_TARIFA
--- Guarda modificaciones sobre la tarifa del viaje
--- ******************************************
+-- TIPO_AJUSTE_TARIFA
+CREATE TABLE tipo_ajuste_tarifa (
+    id_tipo_ajuste BIGINT PRIMARY KEY AUTO_INCREMENT,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion VARCHAR(255)
+) ENGINE=InnoDB;
+
+-- AJUSTE_TARIFA
 CREATE TABLE ajuste_tarifa (
     id_ajuste BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_viaje BIGINT NOT NULL,
-    motivo VARCHAR(50) NOT NULL,
+    id_tipo_ajuste BIGINT NOT NULL,
     descripcion VARCHAR(255),
     importe_ajuste DECIMAL(10,2) NOT NULL,
     fecha_ajuste DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -181,13 +189,76 @@ CREATE TABLE ajuste_tarifa (
     CONSTRAINT fk_ajuste_viaje
         FOREIGN KEY (id_viaje) REFERENCES viaje(id_viaje)
         ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_ajuste_tipo
+        FOREIGN KEY (id_tipo_ajuste) REFERENCES tipo_ajuste_tarifa(id_tipo_ajuste)
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- ******************************************
+-- CALIFICACION
+CREATE TABLE calificacion (
+    id_calificacion BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id_viaje BIGINT NOT NULL,
+    id_emisor BIGINT NOT NULL,
+    id_receptor BIGINT NOT NULL,
+    rol_emisor VARCHAR(20) NOT NULL,
+    rol_receptor VARCHAR(20) NOT NULL,
+    puntuacion INT NOT NULL,
+    comentario VARCHAR(255),
+    fecha_calificacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_calificacion_viaje
+        FOREIGN KEY (id_viaje) REFERENCES viaje(id_viaje)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_calificacion_emisor
+        FOREIGN KEY (id_emisor) REFERENCES usuario(id_usuario)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_calificacion_receptor
+        FOREIGN KEY (id_receptor) REFERENCES usuario(id_usuario)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+
+    CONSTRAINT chk_calificacion_puntuacion CHECK (puntuacion BETWEEN 1 AND 5),
+    CONSTRAINT chk_calificacion_roles CHECK (
+        rol_emisor IN ('RIDER', 'DRIVER') AND
+        rol_receptor IN ('RIDER', 'DRIVER') AND
+        rol_emisor <> rol_receptor
+    ),
+    CONSTRAINT chk_calificacion_emisor_receptor CHECK (id_emisor <> id_receptor)
+) ENGINE=InnoDB;
+
+-- INCIDENCIA
+CREATE TABLE incidencia (
+    id_incidencia BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id_viaje BIGINT NOT NULL,
+    id_usuario_reporta BIGINT NOT NULL,
+    tipo_incidencia VARCHAR(50) NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    estado_incidencia VARCHAR(30) NOT NULL,
+    fecha_reporte DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_resolucion DATETIME DEFAULT NULL,
+
+    CONSTRAINT fk_incidencia_viaje
+        FOREIGN KEY (id_viaje) REFERENCES viaje(id_viaje)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_incidencia_usuario
+        FOREIGN KEY (id_usuario_reporta) REFERENCES usuario(id_usuario)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+
+    CONSTRAINT chk_incidencia_estado CHECK (
+        estado_incidencia IN ('ABIERTA', 'EN_REVISION', 'RESUELTA', 'CERRADA')
+    ),
+    CONSTRAINT chk_incidencia_fechas CHECK (
+        fecha_resolucion IS NULL OR fecha_resolucion >= fecha_reporte
+    )
+) ENGINE=InnoDB;
+
 -- AUDITORIA_EVENTO
--- Auditoría genérica del sistema
--- ******************************************
 CREATE TABLE auditoria_evento (
     id_auditoria BIGINT PRIMARY KEY AUTO_INCREMENT,
     tabla_afectada VARCHAR(50) NOT NULL,
@@ -197,3 +268,27 @@ CREATE TABLE auditoria_evento (
     usuario_bd VARCHAR(100) NOT NULL,
     fecha_evento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+-- ***********************************************************************************
+-- ÍNDICES
+CREATE INDEX idx_metodo_pago_usuario ON metodo_pago(id_usuario);
+
+CREATE INDEX idx_viaje_rider ON viaje(id_rider);
+CREATE INDEX idx_viaje_driver ON viaje(id_driver_asignado);
+CREATE INDEX idx_viaje_metodo_pago ON viaje(id_metodo_pago);
+CREATE INDEX idx_viaje_estado ON viaje(estado);
+
+CREATE INDEX idx_oferta_viaje ON oferta(id_viaje);
+CREATE INDEX idx_oferta_driver ON oferta(id_driver);
+CREATE INDEX idx_oferta_estado ON oferta(estado_oferta);
+
+CREATE INDEX idx_ajuste_viaje ON ajuste_tarifa(id_viaje);
+CREATE INDEX idx_ajuste_tipo ON ajuste_tarifa(id_tipo_ajuste);
+
+CREATE INDEX idx_calificacion_viaje ON calificacion(id_viaje);
+CREATE INDEX idx_calificacion_emisor ON calificacion(id_emisor);
+CREATE INDEX idx_calificacion_receptor ON calificacion(id_receptor);
+
+CREATE INDEX idx_incidencia_viaje ON incidencia(id_viaje);
+CREATE INDEX idx_incidencia_usuario ON incidencia(id_usuario_reporta);
+CREATE INDEX idx_incidencia_estado ON incidencia(estado_incidencia);
