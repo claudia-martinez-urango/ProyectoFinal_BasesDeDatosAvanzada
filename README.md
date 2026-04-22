@@ -87,7 +87,6 @@ USE ride_hailing;
 
 ---
 
-```markdown
 ## 📊 7. Consultas operativas
 
 En `queries.sql` se incluyen ejemplos de:
