@@ -158,7 +158,7 @@ INSERT INTO viaje (
  40.4510000, -3.6890000, 'Plaza Castilla, Madrid',
  15.00, 15.00, 9.40, 27.00),
 
-(17, 14, 14, 'SOLICITADO',
+(17, NULL, 14, 'SOLICITADO',
  '2026-03-15 15:10:00', NULL, NULL, NULL,
  40.4320000, -3.7010000, 'Bilbao, Madrid',
  40.4580000, -3.6760000, 'Prosperidad, Madrid',
