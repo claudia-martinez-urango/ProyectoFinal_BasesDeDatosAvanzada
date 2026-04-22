@@ -1,76 +1,66 @@
 USE ride_hailing;
 
--- *******************************************************
--- PERMISSIONS.SQL
--- Seguridad: usuarios y permisos de base de datos
--- *******************************************************
-
--- *******************************************************
--- 1. LIMPIEZA PREVIA
--- *******************************************************
+-- 1. Borrar usuarios si ya existen
 DROP USER IF EXISTS 'admin_app'@'%';
-DROP USER IF EXISTS 'operator_app'@'%';
-DROP USER IF EXISTS 'analyst_app'@'%';
-DROP USER IF EXISTS 'backup_user'@'%';
-DROP USER IF EXISTS 'readonly_user'@'%';
+DROP USER IF EXISTS 'operador_app'@'%';
+DROP USER IF EXISTS 'analista_app'@'%';
+DROP USER IF EXISTS 'backup_app'@'%';
+DROP USER IF EXISTS 'consulta_app'@'%';
 
--- *******************************************************
--- 2. CREACIÓN DE USUARIOS
--- *******************************************************
+-- 2. Crear usuarios
+
 CREATE USER 'admin_app'@'%' IDENTIFIED BY 'Admin123!';
-CREATE USER 'operator_app'@'%' IDENTIFIED BY 'Operator123!';
-CREATE USER 'analyst_app'@'%' IDENTIFIED BY 'Analyst123!';
-CREATE USER 'backup_user'@'%' IDENTIFIED BY 'Backup123!';
-CREATE USER 'readonly_user'@'%' IDENTIFIED BY 'Readonly123!';
+CREATE USER 'operador_app'@'%' IDENTIFIED BY 'Operador123!';
+CREATE USER 'analista_app'@'%' IDENTIFIED BY 'Analista123!';
+CREATE USER 'backup_app'@'%' IDENTIFIED BY 'Backup123!';
+CREATE USER 'consulta_app'@'%' IDENTIFIED BY 'Consulta123!';
 
--- *******************************************************
--- 3. PERMISOS PARA ADMINISTRADOR DE APLICACIÓN
--- Control total sobre la BD de la práctica
--- *******************************************************
+-- 3. Admin (todos los permisos)
 GRANT ALL PRIVILEGES ON ride_hailing.* TO 'admin_app'@'%';
 
--- *******************************************************
--- 4. PERMISOS PARA OPERATIVA DE LA APP
--- Puede trabajar con viajes, ofertas, ajustes y lectura general
--- *******************************************************
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.usuario TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.rider TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.driver TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.vehiculo TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.driver_vehiculo TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.viaje TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.oferta TO 'operator_app'@'%';
-GRANT SELECT, INSERT, UPDATE ON ride_hailing.ajuste_tarifa TO 'operator_app'@'%';
-GRANT SELECT, INSERT ON ride_hailing.auditoria_evento TO 'operator_app'@'%';
+-- 4. Operador (uso normal de la app)
+-- usuarios
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.usuario TO 'operador_app'@'%';
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.rider TO 'operador_app'@'%';
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.driver TO 'operador_app'@'%';
 
--- *******************************************************
--- 5. PERMISOS PARA ANALISTA / DASHBOARD
--- Solo lectura sobre tablas y vistas analíticas
--- *******************************************************
-GRANT SELECT ON ride_hailing.* TO 'analyst_app'@'%';
+-- vehículos
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.vehiculo TO 'operador_app'@'%';
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.driver_vehiculo TO 'operador_app'@'%';
 
--- *******************************************************
--- 6. PERMISOS PARA BACKUP
--- Permisos mínimos orientados a exportación/lectura
--- *******************************************************
-GRANT SELECT, SHOW VIEW, LOCK TABLES ON ride_hailing.* TO 'backup_user'@'%';
+-- viajes y ofertas
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.viaje TO 'operador_app'@'%';
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.oferta TO 'operador_app'@'%';
 
--- *******************************************************
--- 7. PERMISOS PARA SOLO LECTURA
--- Usuario muy restringido para consultas simples
--- *******************************************************
-GRANT SELECT ON ride_hailing.* TO 'readonly_user'@'%';
+-- ajustes
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.ajuste_tarifa TO 'operador_app'@'%';
+GRANT SELECT ON ride_hailing.tipo_ajuste_tarifa TO 'operador_app'@'%';
 
--- *******************************************************
--- 8. APLICAR CAMBIOS
--- *******************************************************
+-- incidencias y valoraciones
+GRANT SELECT, INSERT, UPDATE ON ride_hailing.incidencia TO 'operador_app'@'%';
+GRANT SELECT, INSERT ON ride_hailing.calificacion TO 'operador_app'@'%';
+
+-- método de pago (solo consultar)
+GRANT SELECT ON ride_hailing.metodo_pago TO 'operador_app'@'%';
+
+-- auditoría
+GRANT SELECT, INSERT ON ride_hailing.auditoria_evento TO 'operador_app'@'%';
+
+-- 5. Analista (solo lectura)
+GRANT SELECT ON ride_hailing.* TO 'analista_app'@'%';
+
+-- 6. Backup (copias de seguridad)
+GRANT SELECT, SHOW VIEW, LOCK TABLES ON ride_hailing.* TO 'backup_app'@'%';
+
+-- 7. Consulta (solo leer datos)
+GRANT SELECT ON ride_hailing.* TO 'consulta_app'@'%';
+
+-- 8. Aplicar cambios
 FLUSH PRIVILEGES;
 
--- *******************************************************
--- 9. COMPROBACIÓN DE PERMISOS
--- *******************************************************
+-- 9. Ver permisos
 SHOW GRANTS FOR 'admin_app'@'%';
-SHOW GRANTS FOR 'operator_app'@'%';
-SHOW GRANTS FOR 'analyst_app'@'%';
-SHOW GRANTS FOR 'backup_user'@'%';
-SHOW GRANTS FOR 'readonly_user'@'%';
+SHOW GRANTS FOR 'operador_app'@'%';
+SHOW GRANTS FOR 'analista_app'@'%';
+SHOW GRANTS FOR 'backup_app'@'%';
+SHOW GRANTS FOR 'consulta_app'@'%';

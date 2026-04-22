@@ -1,185 +1,63 @@
 # ProyectoFinal_BasesDeDatosAvanzada
 - LINK AL MER: https://lucid.app/lucidchart/4d59a050-775c-43a4-a0a0-888e4b221faa/edit?viewport_loc=-1437%2C-2942%2C4270%2C1714%2C0_0&invitationId=inv_092f7be8-5e4a-4ace-a517-d87ea7d2f8ad
 
-# 🚗 Ride Hailing Database Project
+# 🚖 Ride Hailing - Base de Datos Avanzada
+
+Proyecto de diseño e implementación de una base de datos para una plataforma de transporte bajo demanda similar a Uber o Cabify.
+
+---
 
 ## 📌 Descripción
 
-Este proyecto consiste en el diseño e implementación de una base de datos relacional para una plataforma de ride-hailing (tipo Uber, Bolt o Lyft).
+En esta práctica se ha desarrollado una base de datos que permite gestionar todo el ciclo de un viaje:
 
-Permite gestionar:
+- solicitud por parte del usuario  
+- envío de ofertas a conductores  
+- asignación del conductor  
+- realización del trayecto  
+- cálculo del importe final  
+- registro de incidencias y valoraciones  
 
-* Usuarios (riders y conductores)
-* Empresas (companies)
-* Vehículos
-* Viajes
-* Ofertas a conductores
-* Ajustes de tarifa
-* Auditoría del sistema
-
----
-
-## ⚙️ Tecnologías utilizadas
-
-* MySQL 8
-* Docker & Docker Compose
-* SQL (DDL, DML, transacciones, joins, locks)
+Además, se han añadido funcionalidades adicionales para acercar el modelo a un caso real, como métodos de pago, auditoría y métricas de análisis.
 
 ---
 
-## 📂 Estructura del proyecto
+## 🧱 Estructura del proyecto
 
-```
-ProyectoFinal_BDA/
-│── schema.sql          # Creación de la base de datos
-│── data.sql            # Datos de prueba
-│── queries.sql         # Operativa del sistema
-│── dashboard.sql       # Métricas de negocio y BD
-│── backup.sql          # Plan de backup y recuperación
-│── permissions.sql     # Usuarios y permisos
-│── docker-compose.yml  # Despliegue con Docker
-│── README.md           # Instrucciones
-│── DESIGN.md           # Diseño y MER
-```
+El proyecto está organizado en varios archivos SQL y documentación:
+
+- `schema.sql` → creación de la base de datos, tablas e índices  
+- `data.sql` → datos de prueba  
+- `queries.sql` → consultas operativas (inserts, updates, transacciones…)  
+- `dashboard.sql` → consultas analíticas y métricas  
+- `permissions.sql` → gestión de usuarios y permisos  
+- `backup.sql` → estrategia de copias de seguridad  
+- `DESIGN.md` → explicación del diseño  
 
 ---
 
-## 🚀 Cómo ejecutar el proyecto
+## 🗄️ Modelo de datos
 
-### 1. Requisitos
+La base de datos se organiza alrededor de la tabla **VIAJE**, que conecta con el resto de entidades:
 
-* Docker Desktop instalado
+- `usuario` → información común  
+- `driver` y `rider` → roles  
+- `company` → empresa del conductor  
+- `vehiculo` → coches disponibles  
+- `oferta` → asignación de viajes  
+- `ajuste_tarifa` → cambios en el precio  
+- `metodo_pago` → forma de pago  
+- `calificacion` → valoraciones  
+- `incidencia` → problemas durante el servicio  
+- `auditoria_evento` → registro de acciones  
+
+El modelo permite reconstruir completamente lo que ocurre en cada viaje.
 
 ---
 
-### 2. Levantar la base de datos
+## ⚙️ Puesta en marcha
+
+### 1. Levantar la base de datos
 
 ```bash
 docker compose up -d
-```
-
-Esto:
-
-* crea el contenedor MySQL
-* crea la base de datos `ride_hailing`
-* ejecuta automáticamente:
-
-  * `schema.sql`
-  * `data.sql`
-
----
-
-### 3. Comprobar que está funcionando
-
-```bash
-docker ps
-```
-
----
-
-### 4. Conectarse a la base de datos
-
-```bash
-docker exec -it mysql_ride_hailing_PRACTICA mysql -uroot -proot_password
-```
-
----
-
-### 5. Probar consultas
-
-```sql
-USE ride_hailing;
-
-SELECT * FROM viaje;
-SELECT * FROM oferta;
-SELECT * FROM ajuste_tarifa;
-```
-
----
-
-## 📊 Funcionalidades implementadas
-
-### ✔️ Operativa
-
-* Creación de viajes
-* Envío de ofertas a múltiples conductores
-* Aceptación del primer conductor (control de concurrencia)
-* Ajustes de tarifa
-* Auditoría de eventos
-
-### ✔️ Consultas
-
-* Joins complejos
-* Transacciones
-* Locks (`FOR UPDATE`) para evitar conflictos
-
-### ✔️ Dashboard
-
-* Tasa de aceptación
-* Ingresos por conductor y company
-* Tiempo y distancia media
-* Viajes por hora
-
-### ✔️ Seguridad
-
-* Usuarios con roles diferenciados
-* Principio de mínimo privilegio
-
-### ✔️ Backup
-
-* Estrategia de copias de seguridad
-* Restauración de datos
-
----
-
-## 🔒 Seguridad
-
-Se han definido distintos roles:
-
-* `admin_app` → control total
-* `operator_app` → operativa del sistema
-* `analyst_app` → consultas y dashboard
-* `backup_user` → copias de seguridad
-* `readonly_user` → solo lectura
-
----
-
-## 💾 Backup y recuperación
-
-Se utilizan:
-
-* backups completos (`mysqldump`)
-* backups parciales
-* estrategia de retención
-* restauración desde archivo
-
----
-
-## 🧠 Diseño
-
-El diseño sigue un modelo relacional con:
-
-* especialización de usuarios (driver / rider)
-* relaciones N:M (driver-vehículo)
-* control de concurrencia en viajes
-* auditoría genérica
-
-Ver más en: `DESIGN.md`
-
----
-
-## 👥 Autores
-
-* Claudia Martínez Urango
-* Mónica López Ucha 
-* Cristina Fernández Gomariz
-
----
-
-## 📌 Notas
-
-* El sistema garantiza que solo un conductor puede aceptar un viaje mediante locks.
-* Se ha priorizado consistencia y escalabilidad en el diseño.
-* Preparado para ampliaciones futuras (pagos, ratings, etc.).
-
----
