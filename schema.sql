@@ -151,6 +151,7 @@ CREATE TABLE oferta (
     id_oferta BIGINT PRIMARY KEY AUTO_INCREMENT,
     id_viaje BIGINT NOT NULL,
     id_driver BIGINT NOT NULL,
+    id_viaje_aceptado BIGINT DEFAULT NULL,
     fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     estado_oferta VARCHAR(30) NOT NULL,
     fecha_respuesta DATETIME DEFAULT NULL,
@@ -281,6 +282,12 @@ CREATE INDEX idx_oferta_viaje ON oferta(id_viaje);
 CREATE INDEX idx_oferta_driver ON oferta(id_driver);
 CREATE INDEX idx_oferta_estado ON oferta(estado_oferta);
 
+-- Evita que un mismo viaje tenga más de una oferta aceptada.
+-- Solo las ofertas ACEPTADA rellenan id_viaje_aceptado.
+-- Las ofertas PENDIENTE o RECHAZADA quedan con NULL y no chocan en el índice único.
+CREATE UNIQUE INDEX uq_oferta_aceptada_por_viaje
+ON oferta(id_viaje_aceptado);
+
 CREATE INDEX idx_ajuste_viaje ON ajuste_tarifa(id_viaje);
 CREATE INDEX idx_ajuste_tipo ON ajuste_tarifa(id_tipo_ajuste);
 
@@ -291,3 +298,33 @@ CREATE INDEX idx_calificacion_receptor ON calificacion(id_receptor);
 CREATE INDEX idx_incidencia_viaje ON incidencia(id_viaje);
 CREATE INDEX idx_incidencia_usuario ON incidencia(id_usuario_reporta);
 CREATE INDEX idx_incidencia_estado ON incidencia(estado_incidencia);
+
+
+-- ***********************************************************************************
+-- TRIGGERS
+
+DELIMITER //
+
+CREATE TRIGGER trg_oferta_bi_set_id_viaje_aceptado
+BEFORE INSERT ON oferta
+FOR EACH ROW
+BEGIN
+    IF NEW.estado_oferta = 'ACEPTADA' THEN
+        SET NEW.id_viaje_aceptado = NEW.id_viaje;
+    ELSE
+        SET NEW.id_viaje_aceptado = NULL;
+    END IF;
+END//
+
+CREATE TRIGGER trg_oferta_bu_set_id_viaje_aceptado
+BEFORE UPDATE ON oferta
+FOR EACH ROW
+BEGIN
+    IF NEW.estado_oferta = 'ACEPTADA' THEN
+        SET NEW.id_viaje_aceptado = NEW.id_viaje;
+    ELSE
+        SET NEW.id_viaje_aceptado = NULL;
+    END IF;
+END//
+
+DELIMITER ;
