@@ -14,6 +14,7 @@ services:
       - ./schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
       - ./data.sql:/docker-entrypoint-initdb.d/2_data.sql
       - ./monitoring/mysql-exporter-user.sql:/docker-entrypoint-initdb.d/3_monitoring_user.sql
+      - ./permissions.sql:/docker-entrypoint-initdb.d/4_permissions.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_password"]
       interval: 10s

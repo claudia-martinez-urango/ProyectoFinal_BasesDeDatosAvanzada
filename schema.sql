@@ -282,6 +282,10 @@ CREATE INDEX idx_oferta_viaje ON oferta(id_viaje);
 CREATE INDEX idx_oferta_driver ON oferta(id_driver);
 CREATE INDEX idx_oferta_estado ON oferta(estado_oferta);
 
+-- Evita enviar dos veces el mismo viaje al mismo conductor
+CREATE UNIQUE INDEX uq_oferta_viaje_driver
+ON oferta(id_viaje, id_driver);
+
 -- Evita que un mismo viaje tenga más de una oferta aceptada.
 -- Solo las ofertas ACEPTADA rellenan id_viaje_aceptado.
 -- Las ofertas PENDIENTE o RECHAZADA quedan con NULL y no chocan en el índice único.
@@ -299,6 +303,20 @@ CREATE INDEX idx_incidencia_viaje ON incidencia(id_viaje);
 CREATE INDEX idx_incidencia_usuario ON incidencia(id_usuario_reporta);
 CREATE INDEX idx_incidencia_estado ON incidencia(estado_incidencia);
 
+-- ***********************************************************************************
+-- CHECKS DE ESTADOS
+
+ALTER TABLE driver
+ADD CONSTRAINT chk_driver_estado
+CHECK (estado_driver IN ('ACTIVO', 'INACTIVO', 'SUSPENDIDO'));
+
+ALTER TABLE viaje
+ADD CONSTRAINT chk_viaje_estado
+CHECK (estado IN ('SOLICITADO', 'ACEPTADO', 'EN_CURSO', 'FINALIZADO', 'CANCELADO'));
+
+ALTER TABLE oferta
+ADD CONSTRAINT chk_oferta_estado
+CHECK (estado_oferta IN ('PENDIENTE', 'ACEPTADA', 'RECHAZADA'));
 
 -- ***********************************************************************************
 -- TRIGGERS
@@ -324,6 +342,141 @@ BEGIN
         SET NEW.id_viaje_aceptado = NEW.id_viaje;
     ELSE
         SET NEW.id_viaje_aceptado = NULL;
+    END IF;
+END//
+
+CREATE TRIGGER trg_viaje_audit_update
+AFTER UPDATE ON viaje
+FOR EACH ROW
+BEGIN
+    IF NOT (OLD.estado <=> NEW.estado)
+       OR NOT (OLD.id_driver_asignado <=> NEW.id_driver_asignado)
+       OR NOT (OLD.importe_final <=> NEW.importe_final)
+       OR NOT (OLD.fecha_aceptacion <=> NEW.fecha_aceptacion)
+       OR NOT (OLD.fecha_inicio <=> NEW.fecha_inicio)
+       OR NOT (OLD.fecha_fin <=> NEW.fecha_fin)
+    THEN
+        INSERT INTO auditoria_evento (
+            tabla_afectada,
+            id_registro,
+            accion,
+            detalle,
+            usuario_bd,
+            fecha_evento
+        )
+        VALUES (
+            'viaje',
+            NEW.id_viaje,
+            'UPDATE',
+            CONCAT(
+                'Cambio en viaje. Estado: ',
+                OLD.estado,
+                ' -> ',
+                NEW.estado,
+                ', driver: ',
+                COALESCE(CAST(OLD.id_driver_asignado AS CHAR), 'NULL'),
+                ' -> ',
+                COALESCE(CAST(NEW.id_driver_asignado AS CHAR), 'NULL'),
+                ', importe: ',
+                OLD.importe_final,
+                ' -> ',
+                NEW.importe_final
+            ),
+            CURRENT_USER(),
+            NOW()
+        );
+    END IF;
+END//
+
+DELIMITER ;
+
+-- ***********************************************************************************
+-- PROCEDIMIENTOS ALMACENADOS
+
+DELIMITER //
+
+CREATE PROCEDURE sp_aceptar_oferta(
+    IN p_id_viaje BIGINT,
+    IN p_id_driver BIGINT,
+    OUT p_resultado VARCHAR(255)
+)
+BEGIN
+    DECLARE v_id_viaje BIGINT DEFAULT NULL;
+    DECLARE v_actualizados INT DEFAULT 0;
+    DECLARE v_no_encontrado BOOLEAN DEFAULT FALSE;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_resultado = 'ERROR: no se pudo aceptar la oferta';
+    END;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+    BEGIN
+        SET v_no_encontrado = TRUE;
+    END;
+
+    START TRANSACTION;
+
+    SELECT id_viaje
+    INTO v_id_viaje
+    FROM viaje
+    WHERE id_viaje = p_id_viaje
+    FOR UPDATE;
+
+    IF v_no_encontrado THEN
+
+        ROLLBACK;
+        SET p_resultado = 'NO ACEPTADO: el viaje no existe';
+
+    ELSE
+
+        UPDATE viaje
+        SET 
+            id_driver_asignado = p_id_driver,
+            estado = 'ACEPTADO',
+            fecha_aceptacion = NOW()
+        WHERE id_viaje = p_id_viaje
+          AND id_driver_asignado IS NULL
+          AND estado = 'SOLICITADO'
+          AND EXISTS (
+              SELECT 1
+              FROM oferta
+              WHERE id_viaje = p_id_viaje
+                AND id_driver = p_id_driver
+                AND estado_oferta = 'PENDIENTE'
+          );
+
+        SET v_actualizados = ROW_COUNT();
+
+        IF v_actualizados = 1 THEN
+
+            UPDATE oferta
+            SET 
+                estado_oferta = 'ACEPTADA',
+                fecha_respuesta = NOW()
+            WHERE id_viaje = p_id_viaje
+              AND id_driver = p_id_driver
+              AND estado_oferta = 'PENDIENTE';
+
+            UPDATE oferta
+            SET 
+                estado_oferta = 'RECHAZADA',
+                fecha_respuesta = COALESCE(fecha_respuesta, NOW())
+            WHERE id_viaje = p_id_viaje
+              AND id_driver <> p_id_driver
+              AND estado_oferta = 'PENDIENTE';
+
+            COMMIT;
+            SET p_resultado = 'OK: viaje asignado correctamente';
+
+        ELSE
+
+            ROLLBACK;
+            SET p_resultado = 'NO ACEPTADO: el viaje ya estaba asignado o la oferta no era valida';
+
+        END IF;
+
     END IF;
 END//
 
