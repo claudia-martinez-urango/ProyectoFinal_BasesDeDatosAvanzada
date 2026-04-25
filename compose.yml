@@ -12,6 +12,7 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./backups:/backups
       - ./schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
       - ./data.sql:/docker-entrypoint-initdb.d/2_data.sql
     healthcheck:
