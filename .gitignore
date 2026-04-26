@@ -1,0 +1,4 @@
+backups/*.sql
+backups/*.gz
+mysql_data/
+*.log
