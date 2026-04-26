@@ -1,6 +1,6 @@
 # ProyectoFinal_BasesDeDatosAvanzada
 
-- LINK AL MER: https://lucid.app/lucidchart/4d59a050-775c-43a4-a0a0-888e4b221faa/edit?viewport_loc=-1437%2C-2942%2C4270%2C1714%2C0_0&invitationId=inv_092f7be8-5e4a-4ace-a517-d87ea7d2f8ad
+- LINK AL MER: [https://lucid.app/lucidchart/4d59a050-775c-43a4-a0a0-888e4b221faa/edit?viewport_loc=-1437%2C-2942%2C4270%2C1714%2C0_0&invitationId=inv_092f7be8-5e4a-4ace-a517-d87ea7d2f8ad](https://drive.google.com/file/d/1kTlQkm0iKXqfB8liqbG-g4VcNTpXRtGZ/view?usp=sharing)
 
 # 🚖 Ride Hailing - Base de Datos Avanzada
 
