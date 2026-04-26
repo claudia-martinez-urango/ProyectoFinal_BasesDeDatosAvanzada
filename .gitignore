@@ -1,3 +1,4 @@
+backup_*.sql
 backups/*.sql
 backups/*.gz
 mysql_data/
