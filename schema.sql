@@ -226,8 +226,7 @@ CREATE TABLE calificacion (
         rol_emisor IN ('RIDER', 'DRIVER') AND
         rol_receptor IN ('RIDER', 'DRIVER') AND
         rol_emisor <> rol_receptor
-    ),
-    CONSTRAINT chk_calificacion_emisor_receptor CHECK (id_emisor <> id_receptor)
+    )
 ) ENGINE=InnoDB;
 
 -- INCIDENCIA
