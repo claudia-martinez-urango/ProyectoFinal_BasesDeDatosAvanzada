@@ -1,5 +1,6 @@
 # DESIGN.md
 
+
 ## 1. Objetivo del diseño
 
 El objetivo de esta base de datos es modelar el funcionamiento de una plataforma de ride-hailing similar a Uber o Cabify. El sistema debe permitir que un rider solicite un viaje entre dos puntos, que la solicitud se envíe a varios conductores y que el primer conductor que acepte quede asignado al trayecto. Además, el modelo debe contemplar empresas, vehículos, métodos de pago, ajustes de tarifa, incidencias, valoraciones, auditoría, consultas analíticas, seguridad, copias de seguridad y monitorización técnica.
@@ -15,6 +16,178 @@ Durante el diseño se han seguido tres ideas principales. La primera ha sido evi
 También se ha tenido en cuenta que algunas operaciones requieren especial cuidado desde el punto de vista de la concurrencia. El caso más claro es la aceptación de una oferta por parte de un conductor, ya que varios conductores pueden recibir una oferta para el mismo viaje, pero solo uno debe quedar asignado finalmente.
 
 ## 3. Descripción de las entidades
+
+## MER en Mermaid
+Para la posible visualización del modelo de datos se ha descargado una extensión de VisualStudio con el nombre de  "Markdown Preview Mermaid Support".
+
+```mermaid
+erDiagram
+
+    COMPANY {
+        BIGINT id_company PK
+        VARCHAR nombre
+        VARCHAR cif
+        VARCHAR telefono
+        VARCHAR email
+        BOOLEAN activa
+    }
+
+    USUARIO {
+        BIGINT id_usuario PK
+        VARCHAR nombre
+        VARCHAR apellidos
+        VARCHAR email
+        VARCHAR telefono
+        DATETIME fecha_alta
+        BOOLEAN activo
+    }
+
+    DRIVER {
+        BIGINT id_usuario PK, FK
+        BIGINT id_company FK
+        VARCHAR num_licencia
+        VARCHAR estado_driver
+        DATETIME fecha_alta_driver
+    }
+
+    RIDER {
+        BIGINT id_usuario PK, FK
+    }
+
+    METODO_PAGO {
+        BIGINT id_metodo_pago PK
+        BIGINT id_usuario FK
+        VARCHAR tipo
+        VARCHAR detalle
+        BOOLEAN activo
+    }
+
+    VEHICULO {
+        BIGINT id_vehiculo PK
+        VARCHAR matricula
+        VARCHAR marca
+        VARCHAR modelo
+        VARCHAR color
+        INT plazas
+        INT anio
+        BOOLEAN activo
+    }
+
+    DRIVER_VEHICULO {
+        BIGINT id_usuario_driver PK, FK
+        BIGINT id_vehiculo PK, FK
+        DATETIME fecha_desde PK
+        DATETIME fecha_hasta
+    }
+
+    VIAJE {
+        BIGINT id_viaje PK
+        BIGINT id_rider FK
+        BIGINT id_driver_asignado FK
+        BIGINT id_metodo_pago FK
+        VARCHAR estado
+        DATETIME fecha_solicitud
+        DATETIME fecha_aceptacion
+        DATETIME fecha_inicio
+        DATETIME fecha_fin
+        DECIMAL origen_lat
+        DECIMAL origen_lng
+        VARCHAR origen_direccion
+        DECIMAL destino_lat
+        DECIMAL destino_lng
+        VARCHAR destino_direccion
+        DECIMAL importe_estimado
+        DECIMAL importe_final
+        DECIMAL distancia_km
+        DECIMAL duracion_min
+    }
+
+    OFERTA {
+        BIGINT id_oferta PK
+        BIGINT id_viaje FK
+        BIGINT id_driver FK
+        BIGINT id_viaje_aceptado
+        DATETIME fecha_envio
+        VARCHAR estado_oferta
+        DATETIME fecha_respuesta
+    }
+
+    TIPO_AJUSTE_TARIFA {
+        BIGINT id_tipo_ajuste PK
+        VARCHAR codigo
+        VARCHAR nombre
+        VARCHAR descripcion
+    }
+
+    AJUSTE_TARIFA {
+        BIGINT id_ajuste PK
+        BIGINT id_viaje FK
+        BIGINT id_tipo_ajuste FK
+        VARCHAR descripcion
+        DECIMAL importe_ajuste
+        DATETIME fecha_ajuste
+    }
+
+    CALIFICACION {
+        BIGINT id_calificacion PK
+        BIGINT id_viaje FK
+        BIGINT id_emisor FK
+        BIGINT id_receptor FK
+        VARCHAR rol_emisor
+        VARCHAR rol_receptor
+        INT puntuacion
+        VARCHAR comentario
+        DATETIME fecha_calificacion
+    }
+
+    INCIDENCIA {
+        BIGINT id_incidencia PK
+        BIGINT id_viaje FK
+        BIGINT id_usuario_reporta FK
+        VARCHAR tipo_incidencia
+        VARCHAR descripcion
+        VARCHAR estado_incidencia
+        DATETIME fecha_reporte
+        DATETIME fecha_resolucion
+    }
+
+    AUDITORIA_EVENTO {
+        BIGINT id_auditoria PK
+        VARCHAR tabla_afectada
+        BIGINT id_registro
+        VARCHAR accion
+        VARCHAR detalle
+        VARCHAR usuario_bd
+        DATETIME fecha_evento
+    }
+
+    COMPANY ||--o{ DRIVER : tiene
+
+    USUARIO ||--o| DRIVER : puede_ser
+    USUARIO ||--o| RIDER : puede_ser
+
+    USUARIO ||--o{ METODO_PAGO : registra
+    METODO_PAGO ||--o{ VIAJE : paga
+
+    DRIVER ||--o{ DRIVER_VEHICULO : usa
+    VEHICULO ||--o{ DRIVER_VEHICULO : se_asigna
+
+    RIDER ||--o{ VIAJE : solicita
+    DRIVER o|--o{ VIAJE : realiza
+
+    VIAJE ||--o{ OFERTA : genera
+    DRIVER ||--o{ OFERTA : recibe
+
+    VIAJE ||--o{ AJUSTE_TARIFA : tiene
+    TIPO_AJUSTE_TARIFA ||--o{ AJUSTE_TARIFA : clasifica
+
+    VIAJE ||--o{ CALIFICACION : recibe
+    USUARIO ||--o{ CALIFICACION : emite
+    USUARIO ||--o{ CALIFICACION : recibe
+
+    VIAJE ||--o{ INCIDENCIA : registra
+    USUARIO ||--o{ INCIDENCIA : reporta
+```
 
 ### 3.1. Company
 
@@ -100,21 +273,44 @@ La ventaja de este enfoque es que permite auditar viajes, ofertas, ajustes, inci
 
 Las relaciones más relevantes son las siguientes:
 
-- Una `company` tiene varios `driver`.
-- Un `usuario` puede especializarse en `driver` o en `rider`.
+- Una `company` puede tener varios `driver`, pero cada `driver` pertenece a una única `company`.
+
+- Un `usuario` puede especializarse en `driver` o en `rider`.  
+  Los datos comunes se guardan en `usuario`, y los datos específicos se guardan en cada tabla hija.
+
 - Un `usuario` puede tener varios `metodo_pago`.
-- Un `driver` y un `vehiculo` se relacionan mediante `driver_vehiculo`.
-- Un `rider` puede solicitar muchos `viaje`.
-- Un `driver` puede quedar asignado a muchos `viaje`.
+
+- Un `metodo_pago` puede utilizarse en varios `viaje`, pero cada `viaje` usa un único método de pago.
+
+- Un `driver` y un `vehiculo` se relacionan mediante `driver_vehiculo`.  
+  Esta tabla intermedia permite representar una relación N:M y guardar el histórico de asignaciones.
+
+- Un `rider` puede solicitar muchos `viaje`, pero cada `viaje` pertenece a un único `rider`.
+
+- Un `driver` puede quedar asignado a muchos `viaje`.  
+  Sin embargo, un `viaje` puede no tener conductor asignado al principio, ya que `id_driver_asignado` puede ser `NULL`.
+
 - Un `viaje` puede generar muchas `oferta`.
+
 - Un `driver` puede recibir muchas `oferta`.
-- Un `viaje` puede tener varios `ajuste_tarifa`.
-- Un `tipo_ajuste_tarifa` clasifica muchos `ajuste_tarifa`.
-- Un `viaje` puede tener varias `calificacion`.
-- Un `viaje` puede tener varias `incidencia`.
-- Un `usuario` puede emitir y recibir varias `calificacion`.
+
+- Cada `oferta` pertenece a un único `viaje` y a un único `driver`.
+
+- Un `viaje` puede tener varios `ajuste_tarifa`, aunque también puede no tener ninguno.
+
+- Un `tipo_ajuste_tarifa` puede clasificar muchos `ajuste_tarifa`.
+
+- Un `viaje` puede tener varias `calificacion`, aunque también puede no tener ninguna.
+
+- Un `usuario` puede emitir varias `calificacion`.
+
+- Un `usuario` puede recibir varias `calificacion`.
+
+- Un `viaje` puede tener varias `incidencia`, aunque también puede no tener ninguna.
+
 - Un `usuario` puede reportar varias `incidencia`.
-- Un `metodo_pago` puede utilizarse en varios `viaje`.
+
+- La tabla `auditoria_evento` no tiene una relación directa mediante clave foránea, porque funciona como auditoría genérica del sistema.
 
 Estas relaciones permiten representar correctamente tanto la operativa principal como los procesos auxiliares de control, calidad y análisis.
 
