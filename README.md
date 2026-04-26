@@ -1,14 +1,185 @@
 # ProyectoFinal_BasesDeDatosAvanzada
 
-- LINK AL MER: [https://lucid.app/lucidchart/4d59a050-775c-43a4-a0a0-888e4b221faa/edit?viewport_loc=-1437%2C-2942%2C4270%2C1714%2C0_0&invitationId=inv_092f7be8-5e4a-4ace-a517-d87ea7d2f8ad](https://drive.google.com/file/d/1kTlQkm0iKXqfB8liqbG-g4VcNTpXRtGZ/view?usp=sharing)
+- LINK AL MER: [https://drive.google.com/file/d/1kTlQkm0iKXqfB8liqbG-g4VcNTpXRtGZ/view?usp=sharing]
 
-# 🚖 Ride Hailing - Base de Datos Avanzada
+# Ride Hailing - Base de Datos Avanzada
 
 Proyecto de diseño e implementación de una base de datos para una plataforma de transporte bajo demanda similar a Uber, Bolt, Lyft o Cabify.
 
 ---
+# Modelo entidad-relación
+```mermaid
+erDiagram
 
-## 📌 1. Descripción del proyecto
+    COMPANY {
+        BIGINT id_company PK
+        VARCHAR nombre
+        VARCHAR cif
+        VARCHAR telefono
+        VARCHAR email
+        BOOLEAN activa
+    }
+
+    USUARIO {
+        BIGINT id_usuario PK
+        VARCHAR nombre
+        VARCHAR apellidos
+        VARCHAR email
+        VARCHAR telefono
+        DATETIME fecha_alta
+        BOOLEAN activo
+    }
+
+    DRIVER {
+        BIGINT id_usuario PK, FK
+        BIGINT id_company FK
+        VARCHAR num_licencia
+        VARCHAR estado_driver
+        DATETIME fecha_alta_driver
+    }
+
+    RIDER {
+        BIGINT id_usuario PK, FK
+    }
+
+    METODO_PAGO {
+        BIGINT id_metodo_pago PK
+        BIGINT id_usuario FK
+        VARCHAR tipo
+        VARCHAR detalle
+        BOOLEAN activo
+    }
+
+    VEHICULO {
+        BIGINT id_vehiculo PK
+        VARCHAR matricula
+        VARCHAR marca
+        VARCHAR modelo
+        VARCHAR color
+        INT plazas
+        INT anio
+        BOOLEAN activo
+    }
+
+    DRIVER_VEHICULO {
+        BIGINT id_usuario_driver PK, FK
+        BIGINT id_vehiculo PK, FK
+        DATETIME fecha_desde PK
+        DATETIME fecha_hasta
+    }
+
+    VIAJE {
+        BIGINT id_viaje PK
+        BIGINT id_rider FK
+        BIGINT id_driver_asignado FK
+        BIGINT id_metodo_pago FK
+        VARCHAR estado
+        DATETIME fecha_solicitud
+        DATETIME fecha_aceptacion
+        DATETIME fecha_inicio
+        DATETIME fecha_fin
+        DECIMAL origen_lat
+        DECIMAL origen_lng
+        VARCHAR origen_direccion
+        DECIMAL destino_lat
+        DECIMAL destino_lng
+        VARCHAR destino_direccion
+        DECIMAL importe_estimado
+        DECIMAL importe_final
+        DECIMAL distancia_km
+        DECIMAL duracion_min
+    }
+
+    OFERTA {
+        BIGINT id_oferta PK
+        BIGINT id_viaje FK
+        BIGINT id_driver FK
+        BIGINT id_viaje_aceptado
+        DATETIME fecha_envio
+        VARCHAR estado_oferta
+        DATETIME fecha_respuesta
+    }
+
+    TIPO_AJUSTE_TARIFA {
+        BIGINT id_tipo_ajuste PK
+        VARCHAR codigo
+        VARCHAR nombre
+        VARCHAR descripcion
+    }
+
+    AJUSTE_TARIFA {
+        BIGINT id_ajuste PK
+        BIGINT id_viaje FK
+        BIGINT id_tipo_ajuste FK
+        VARCHAR descripcion
+        DECIMAL importe_ajuste
+        DATETIME fecha_ajuste
+    }
+
+    CALIFICACION {
+        BIGINT id_calificacion PK
+        BIGINT id_viaje FK
+        BIGINT id_emisor FK
+        BIGINT id_receptor FK
+        VARCHAR rol_emisor
+        VARCHAR rol_receptor
+        INT puntuacion
+        VARCHAR comentario
+        DATETIME fecha_calificacion
+    }
+
+    INCIDENCIA {
+        BIGINT id_incidencia PK
+        BIGINT id_viaje FK
+        BIGINT id_usuario_reporta FK
+        VARCHAR tipo_incidencia
+        VARCHAR descripcion
+        VARCHAR estado_incidencia
+        DATETIME fecha_reporte
+        DATETIME fecha_resolucion
+    }
+
+    AUDITORIA_EVENTO {
+        BIGINT id_auditoria PK
+        VARCHAR tabla_afectada
+        BIGINT id_registro
+        VARCHAR accion
+        VARCHAR detalle
+        VARCHAR usuario_bd
+        DATETIME fecha_evento
+    }
+
+    COMPANY ||--o{ DRIVER : tiene
+
+    USUARIO ||--o| DRIVER : puede_ser
+    USUARIO ||--o| RIDER : puede_ser
+
+    USUARIO ||--o{ METODO_PAGO : registra
+    METODO_PAGO ||--o{ VIAJE : paga
+
+    DRIVER ||--o{ DRIVER_VEHICULO : usa
+    VEHICULO ||--o{ DRIVER_VEHICULO : se_asigna
+
+    RIDER ||--o{ VIAJE : solicita
+    DRIVER |o--o{ VIAJE : realiza
+
+    VIAJE ||--o{ OFERTA : genera
+    DRIVER ||--o{ OFERTA : recibe
+
+    VIAJE ||--o{ AJUSTE_TARIFA : tiene
+    TIPO_AJUSTE_TARIFA ||--o{ AJUSTE_TARIFA : clasifica
+
+    VIAJE ||--o{ CALIFICACION : recibe
+    USUARIO ||--o{ CALIFICACION : emite
+    USUARIO ||--o{ CALIFICACION : recibe
+
+    VIAJE ||--o{ INCIDENCIA : registra
+    USUARIO ||--o{ INCIDENCIA : reporta
+```
+
+---
+
+##  1. Descripción del proyecto
 
 El objetivo de esta práctica es desarrollar una base de datos que permita gestionar todo el ciclo de vida de un viaje:
 
@@ -25,7 +196,7 @@ Además, se han añadido funcionalidades adicionales para acercar el modelo a un
 
 ---
 
-## 🎯 2. Objetivos
+##  2. Objetivos
 
 - Diseñar un modelo relacional completo.
 - Garantizar integridad y consistencia.
@@ -38,7 +209,7 @@ Además, se han añadido funcionalidades adicionales para acercar el modelo a un
 
 ---
 
-## 🧱 3. Estructura del proyecto
+## 3. Estructura del proyecto
 
 El proyecto está organizado en varios archivos SQL, documentación y configuración Docker:
 
@@ -57,7 +228,7 @@ El proyecto está organizado en varios archivos SQL, documentación y configurac
 
 ---
 
-## 🗄️ 4. Modelo de datos
+## 4. Modelo de datos
 
 La base de datos se organiza alrededor de la tabla `viaje`, que conecta con el resto de entidades:
 
@@ -80,7 +251,7 @@ El modelo permite reconstruir completamente lo que ocurre en cada viaje.
 
 ---
 
-## 🔄 5. Flujo del sistema
+## 5. Flujo del sistema
 
 1. El rider solicita un viaje.
 2. Se crea un registro en `viaje` con estado `SOLICITADO`.
@@ -98,7 +269,7 @@ El modelo permite reconstruir completamente lo que ocurre en cada viaje.
 
 ---
 
-## ⚙️ 6. Puesta en marcha
+## 6. Puesta en marcha
 
 ### Levantar el entorno
 
@@ -154,7 +325,7 @@ SELECT COUNT(*) FROM oferta;
 
 ---
 
-## 📊 7. Consultas operativas
+## 7. Consultas operativas
 
 En `queries.sql` se incluyen ejemplos de:
 
@@ -177,7 +348,7 @@ cmd /c "docker exec -i mysql_ride_hailing_PRACTICA mysql -uroot -proot_password 
 
 ---
 
-## ⚙️ 8. Procedimientos almacenados
+## 8. Procedimientos almacenados
 
 El proyecto incluye `procedures.sql`, que define procedimientos almacenados para encapsular operaciones habituales del sistema.
 
@@ -233,7 +404,7 @@ CALL sp_crear_viaje(
 
 ---
 
-## 📈 9. Dashboard SQL
+## 9. Dashboard SQL
 
 En `dashboard.sql` se incluyen métricas de negocio y de base de datos.
 
@@ -263,7 +434,7 @@ cmd /c "docker exec -i mysql_ride_hailing_PRACTICA mysql -uroot -proot_password 
 
 ---
 
-## 📡 10. Monitorización con Prometheus y Grafana
+## 10. Monitorización con Prometheus y Grafana
 
 Además del dashboard SQL, el proyecto incluye una capa de monitorización técnica con Prometheus y Grafana.
 
@@ -365,7 +536,7 @@ Prometheus y Grafana permiten monitorizar la salud técnica de MySQL:
 
 ---
 
-## 🔐 11. Seguridad
+## 11. Seguridad
 
 El proyecto define varios usuarios de base de datos con distintos permisos:
 
@@ -390,7 +561,7 @@ El usuario `operador_app` también tiene permisos `EXECUTE` sobre los procedimie
 
 ---
 
-## 💾 12. Copias de seguridad
+## 12. Copias de seguridad
 
 El proyecto incluye una estrategia de backup y recuperación mediante `mysqldump`.
 
@@ -448,7 +619,7 @@ docker exec mysql_ride_hailing_PRACTICA mysql -uroot -proot_password -e "DROP DA
 
 ---
 
-## 🧠 13. Decisiones de diseño
+## 13. Decisiones de diseño
 
 Principales decisiones:
 
@@ -471,7 +642,7 @@ Más detalle en `DESIGN.md`.
 
 ---
 
-## 🚀 14. Mejoras añadidas
+## 14. Mejoras añadidas
 
 Además de los requisitos básicos, se han añadido:
 
@@ -489,7 +660,7 @@ Además de los requisitos básicos, se han añadido:
 
 ---
 
-## ⚡ 15. Rendimiento
+## 15. Rendimiento
 
 Se han añadido índices para mejorar consultas habituales:
 
@@ -508,7 +679,7 @@ Ejemplos:
 
 ---
 
-## 🔍 16. Integridad
+## 16. Integridad
 
 El proyecto garantiza integridad mediante:
 
@@ -531,7 +702,7 @@ Esta impide que un mismo viaje tenga dos ofertas en estado `ACEPTADA`.
 
 ---
 
-## 🧪 17. Pruebas realizadas
+## 17. Pruebas realizadas
 
 Se han realizado pruebas de:
 
@@ -555,7 +726,7 @@ Pruebas destacadas:
 
 ---
 
-## 📌 18. Posibles mejoras futuras
+## 18. Posibles mejoras futuras
 
 - geolocalización avanzada.
 - cálculo real de rutas.
@@ -569,7 +740,7 @@ Pruebas destacadas:
 
 ---
 
-## ✅ 19. Estado del proyecto
+## 19. Estado del proyecto
 
 ✔ Modelo completo  
 ✔ Datos de prueba  
@@ -585,7 +756,7 @@ Pruebas destacadas:
 
 ---
 
-## 📎 20. Conclusión
+## 20. Conclusión
 
 El sistema permite gestionar de forma completa una plataforma de ride-hailing, combinando operativa, análisis, seguridad, copias de seguridad y monitorización técnica en una misma solución.
 
